@@ -3,8 +3,7 @@
 const links = [
   { label: "Why SafeSpot", href: "#story" },
   { label: "How It Works", href: "#how-it-works" },
-  { label: "Data Layers", href: "#map-layers" },
-  { label: "Dashboard", href: "#dashboard" },
+  { label: "Live Map", href: "#dashboard" },
 ];
 
 export default function Navbar() {

@@ -51,60 +51,46 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ── SECTION 3: MAP LAYERS ── */}
-        <section id="map-layers" className="min-h-screen flex flex-col justify-center items-center px-8 py-32">
-          <p className="text-sm uppercase tracking-widest text-orange-400 mb-4">Data Layers</p>
-          <h2 className="text-4xl font-bold mb-4">Map Data Layers</h2>
-          <p className="text-gray-400 mb-16">Four layers stack together to build Toronto's heat risk map</p>
-
-          <div className="flex flex-col gap-4 w-full max-w-lg">
-            {[
-              { num: "01", label: "Toronto Base Map",              desc: "Base map of Toronto (Leaflet + OpenStreetMap)",       color: "border-blue-800" },
-              { num: "02", label: "Urban Heat Island Effect",      desc: "Heat island zones — ArcGIS REST API (Seneca)",        color: "border-orange-800" },
-              { num: "03", label: "Air Conditioned & Cool Spaces", desc: "Cooling space locations — City of Toronto Open Data", color: "border-cyan-800" },
-              { num: "04", label: "Library Branch Locations",      desc: "Library branches — City of Toronto Open Data",        color: "border-green-800" },
-            ].map((layer) => (
-              <div key={layer.num} className={`border ${layer.color} rounded-xl px-6 py-4 bg-zinc-900 flex items-center gap-4`}>
-                <span className="text-2xl font-bold text-gray-600 w-10">{layer.num}</span>
-                <div>
-                  <div className="font-semibold text-white">{layer.label}</div>
-                  <div className="text-sm text-gray-500">{layer.desc}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-16 w-full max-w-lg h-72 bg-zinc-900 border border-zinc-700 rounded-2xl flex items-center justify-center text-gray-600">
-            [ Leaflet map goes here ]
-          </div>
-        </section>
-
-        {/* ── SECTION 4: LIVE DASHBOARD ── */}
-        <section id="dashboard" className="min-h-screen flex flex-col justify-center items-center px-8 py-32 bg-zinc-950">
+        {/* ── SECTION 3: LIVE MAP DASHBOARD ── */}
+        <section id="dashboard" className="flex flex-col items-center px-8 py-24">
           <p className="text-sm uppercase tracking-widest text-orange-400 mb-4">Live Dashboard</p>
-          <h2 className="text-4xl font-bold mb-4">Real-Time Dashboard</h2>
-          <p className="text-gray-400 mb-16">Raspberry Pi sensor + GPS combined into a live safety map</p>
+          <h2 className="text-4xl font-bold mb-2">Real-Time Safety Map</h2>
+          <p className="text-gray-400 mb-10 text-center">
+            Heat island zones · Cooling centres · Libraries · Your location — all in one map
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full max-w-3xl mb-10">
-            {/* Temperature card — Marcos / Gary */}
-            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6">
-              <p className="text-sm text-gray-500 mb-2">🌡️ Live Temperature</p>
-              <div className="text-5xl font-bold text-orange-400">-- °C</div>
-              <p className="text-xs text-gray-600 mt-3">Live reading from the Raspberry Pi temperature sensor</p>
-              <div className="mt-4 h-2 bg-zinc-800 rounded-full">
-                <div className="h-2 w-0 bg-orange-400 rounded-full" />
+          {/* Legend */}
+          <div className="flex flex-wrap justify-center gap-4 mb-8 text-xs text-gray-400">
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-red-500 inline-block"/><span>High Heat</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-orange-400 inline-block"/><span>Medium Heat</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-sm bg-yellow-400 inline-block"/><span>Low Heat</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-500 inline-block"/><span>Safe</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-blue-500 inline-block"/><span>Cooling Centre</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-green-400 inline-block"/><span>Library</span></span>
+            <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded-full bg-orange-500 inline-block"/><span>You</span></span>
+          </div>
+
+          {/* Temperature cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-3xl mb-6">
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-5 flex items-center gap-4">
+              <span className="text-3xl">🌡️</span>
+              <div>
+                <p className="text-xs text-gray-500">Sensor Temperature</p>
+                <p className="text-3xl font-bold text-orange-400">-- °C</p>
+                <p className="text-xs text-gray-600 mt-0.5">Raspberry Pi · updates every 5s</p>
               </div>
             </div>
-
-            {/* Toronto outdoor temp — OpenWeather (Paul) */}
-            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-6">
-              <p className="text-sm text-gray-500 mb-2">🌤️ Toronto Outdoor Temp</p>
-              <div className="text-5xl font-bold text-yellow-400">-- °C</div>
-              <p className="text-xs text-gray-600 mt-3">Live city temperature from OpenWeather API</p>
+            <div className="bg-zinc-900 border border-zinc-700 rounded-2xl p-5 flex items-center gap-4">
+              <span className="text-3xl">🌤️</span>
+              <div>
+                <p className="text-xs text-gray-500">Toronto Outdoor Temp</p>
+                <p className="text-3xl font-bold text-yellow-400">-- °C</p>
+                <p className="text-xs text-gray-600 mt-0.5">OpenWeather API · updates hourly</p>
+              </div>
             </div>
           </div>
 
-          {/* GPS + map + nearest shelter — Arun (full width) */}
+          {/* GPS + full map + nearest shelter */}
           <NearestShelter />
         </section>
       </main>
