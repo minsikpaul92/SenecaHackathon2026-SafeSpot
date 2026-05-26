@@ -1,3 +1,4 @@
+import '@hono/zod-openapi'
 import { z } from 'zod'
 
 const AlertLevelSchema = z

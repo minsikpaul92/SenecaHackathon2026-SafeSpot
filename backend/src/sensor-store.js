@@ -1,5 +1,4 @@
 import { desc } from 'drizzle-orm'
-import { db } from './db.js'
 import { sensorReadings } from './schema.js'
 
 const toReadingPayload = (reading) => {
@@ -14,7 +13,7 @@ const toReadingPayload = (reading) => {
   }
 }
 
-export const createSensorStore = (database = db) => {
+export const createSensorStore = (database) => {
   const save = (temperature, source) => {
     const createdAt = new Date().toISOString()
 

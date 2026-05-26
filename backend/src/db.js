@@ -68,7 +68,3 @@ export const createDatabase = ({ filename = 'safespot.db' } = {}) => {
 
   return { db, sqlite, initializeDatabase, seedMockData }
 }
-
-const { db, initializeDatabase, seedMockData } = createDatabase()
-
-export { db, initializeDatabase, seedMockData }

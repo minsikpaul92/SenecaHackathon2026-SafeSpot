@@ -10,7 +10,7 @@ describe('createApp', () => {
   })
 
   it('creates an app with default sensorStore', () => {
-    const app = createApp()
+    const app = createApp({ sensorStore: createMockStore() })
     expect(app).toBeDefined()
   })
 
@@ -84,6 +84,18 @@ describe('createApp', () => {
       expect(res.status).toBe(400)
       const body = await res.json()
       expect(body.error).toContain('temperature')
+    })
+
+    it('returns 400 for malformed (non-parseable) JSON body', async () => {
+      const app = createApp({ sensorStore: createMockStore() })
+
+      const res = await app.request('/api/sensor-data', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{invalid json'
+      })
+
+      expect(res.status).toBe(400)
     })
   })
 

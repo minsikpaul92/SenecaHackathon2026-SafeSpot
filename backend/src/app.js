@@ -4,7 +4,8 @@ import { cors } from 'hono/cors'
 import { registerSensorRoutes } from './routes/sensor.js'
 import { createSensorStore } from './sensor-store.js'
 
-export const createApp = ({ sensorStore = createSensorStore() } = {}) => {
+export const createApp = ({ sensorStore, db: database } = {}) => {
+  const store = sensorStore ?? createSensorStore(database)
   const app = new OpenAPIHono({
     defaultHook: (result, c) => {
       if (!result.success) {
@@ -21,7 +22,7 @@ export const createApp = ({ sensorStore = createSensorStore() } = {}) => {
   app.get('/', healthHandler)
   app.get('/health', healthHandler)
 
-  registerSensorRoutes(app, sensorStore)
+  registerSensorRoutes(app, store)
 
   app.doc31('/openapi.json', {
     openapi: '3.1.0',
