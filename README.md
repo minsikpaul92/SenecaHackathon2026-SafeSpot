@@ -24,7 +24,7 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 | Name | Role |
 |------|------|
 | **Gary** | Hardware — Raspberry Pi & Temperature Sensor |
-| **Marcos** | Backend — FastAPI (Python) |
+| **Marcos** | Backend — Node.js (Hono + Drizzle + SQLite) |
 | **Paul** | Frontend — Next.js, Leaflet.js Map Integration |
 | **Seulgi** | Frontend — UI/UX Design, Alert System |
 | **Arun** | Frontend — GPS Location, Nearest Shelter Routing |
@@ -36,7 +36,7 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 | Layer | Technology |
 |-------|-----------|
 | Frontend | Next.js, Tailwind CSS, Leaflet.js |
-| Backend | FastAPI (Python) |
+| Backend | Hono.js (Node.js) + Drizzle ORM + SQLite |
 | Hardware | Raspberry Pi + Temperature Sensor |
 | Map Library | Leaflet.js with GeoJSON layers |
 | Data Sources | ArcGIS REST API, City of Toronto Open Data |
@@ -52,7 +52,7 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 
 ### 🌡️ 2. Real-Time Temperature Monitoring
 - Raspberry Pi sensor deployed in a high-risk heat zone
-- Sensor readings sent to FastAPI backend at regular intervals
+- Sensor readings sent to Hono backend at regular intervals
 - Live data point displayed on the map
 
 ### 🚨 3. Danger Threshold Alert
@@ -74,7 +74,7 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 | Urban Heat Island Effect | ArcGIS REST API (Seneca) | GeoJSON |
 | Air Conditioned & Cool Spaces | City of Toronto Open Data | GeoJSON |
 | Library Branch Locations | City of Toronto Open Data | GeoJSON |
-| Live Temperature | Raspberry Pi Sensor | POST via FastAPI |
+| Live Temperature | Raspberry Pi Sensor | POST via Hono |
 
 ---
 
@@ -87,6 +87,7 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 | `GET` | `/api/libraries` | Returns library branch locations |
 | `POST` | `/api/sensor-data` | Receives temperature from Raspberry Pi |
 | `GET` | `/api/sensor-latest` | Returns most recent sensor reading |
+| `POST` | `/api/sensor-override` | Manual temperature input for testing |
 
 ---
 
@@ -96,7 +97,7 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 Raspberry Pi (Temperature Sensor)
         │
         ▼  POST /api/sensor-data
-FastAPI Backend
+Hono Backend (Node.js)
         │
         ▼  Serves GeoJSON + sensor data
 Next.js Frontend
@@ -115,7 +116,7 @@ SafeSpot/
 │   ├── app/
 │   ├── components/
 │   └── ...
-└── backend/         # FastAPI server (Marcos)
+└── backend/         # Hono server (Marcos)
 ```
 
 ---
@@ -125,7 +126,7 @@ SafeSpot/
 ### Day 1
 | Task | Owner | Goal |
 |------|-------|------|
-| FastAPI project setup | Marcos | Server running locally |
+| Hono project setup | Marcos | Server running locally |
 | ArcGIS heat data fetch | Marcos | `GET /api/heat-data` working |
 | Cooling centres + libraries fetch | Marcos | GET endpoints working |
 | Next.js + Leaflet setup | Paul | Toronto map rendered |

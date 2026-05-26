@@ -1,0 +1,190 @@
+openapi: 3.0.3
+info:
+  title: SafeSpot Toronto — Sensor API
+  description: |
+    Real-time temperature sensor API for SafeSpot Toronto. Receives temperature data
+    from a Raspberry Pi sensor, evaluates danger levels based on Health Canada and
+    Toronto Public Health guidelines, and provides manual override for testing.
+  version: 1.0.0
+  contact:
+    name: Team codeXperts
+    url: https://github.com/codexperts2024/SafeSpot_codeXperts
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+security:
+  - {}
+
+tags:
+  - name: Sensor Data
+    description: Temperature sensor endpoints
+
+paths:
+  /api/sensor-data:
+    post:
+      operationId: postSensorData
+      summary: Receive temperature from Raspberry Pi
+      description: |
+        Stores a new temperature reading from the Raspberry Pi sensor, evaluates
+        the alert level based on danger thresholds, and persists to the database.
+      tags:
+        - Sensor Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - temperature
+              properties:
+                temperature:
+                  type: number
+                  format: float
+                  description: Temperature in Celsius
+                  example: 37.5
+      responses:
+        '200':
+          description: Reading received and stored successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [ok]
+                    example: ok
+        '400':
+          description: Missing or invalid temperature value
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missing required field: temperature"
+
+  /api/sensor-latest:
+    get:
+      operationId: getSensorLatest
+      summary: Get the latest temperature reading
+      description: |
+        Returns the most recent temperature reading with its alert level and timestamp.
+        Used by the frontend to display live data on the dashboard.
+      tags:
+        - Sensor Data
+      responses:
+        '200':
+          description: Latest reading retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SensorReading'
+        '204':
+          description: No readings have been recorded yet
+        '400':
+          description: Invalid request parameters
+        '500':
+          description: Server error retrieving latest reading
+
+  /api/sensor-override:
+    post:
+      operationId: postSensorOverride
+      summary: Manual temperature input for testing
+      description: |
+        Allows testing without the physical sensor. Simulates a temperature reading
+        by manually setting a value, useful for testing alert levels and frontend behavior.
+      tags:
+        - Sensor Data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - temperature
+              properties:
+                temperature:
+                  type: number
+                  format: float
+                  description: Temperature in Celsius (for testing)
+                  example: 31.0
+      responses:
+        '200':
+          description: Override applied successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    enum: [overridden]
+                    example: overridden
+                  temperature:
+                    type: number
+                    format: float
+                    example: 31.0
+        '400':
+          description: Missing or invalid temperature value
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                    example: "Missing required field: temperature"
+
+components:
+  schemas:
+    SensorReading:
+      type: object
+      description: Complete temperature reading with alert metadata
+      properties:
+        temperature:
+          type: number
+          format: float
+          description: Temperature in Celsius
+          example: 37.5
+        timestamp:
+          type: string
+          format: date-time
+          description: ISO 8601 timestamp when reading was recorded
+          example: "2026-05-26T14:30:00.000Z"
+        alert:
+          $ref: '#/components/schemas/AlertLevel'
+
+    AlertLevel:
+      type: object
+      description: |
+        Alert level determined by temperature thresholds based on
+        Health Canada and Toronto Public Health guidelines.
+      required:
+        - level
+        - message
+      properties:
+        level:
+          type: string
+          enum:
+            - safe
+            - caution
+            - danger
+            - extreme
+          description: |
+            - **safe**: < 30°C — No alert
+            - **caution**: 30–34°C — Mild warning to stay hydrated
+            - **danger**: 35–39°C — Alert to find cooling centre (official threshold)
+            - **extreme**: ≥ 40°C — Urgent alert to seek cooling immediately
+          example: danger
+        message:
+          type: string
+          description: Human-readable alert message for the UI
+          example: "Extreme Heat Warning — Find a Cool Space Now"
