@@ -56,7 +56,7 @@ describe('createApp', () => {
       const res = await app.request('/docs')
       expect(res.status).toBe(200)
       const text = await res.text()
-      expect(text).toContain('scalar')
+      expect(text.toLowerCase()).toContain('swagger')
     })
   })
 

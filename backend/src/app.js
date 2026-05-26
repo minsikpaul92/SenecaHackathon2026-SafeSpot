@@ -1,5 +1,5 @@
 import { OpenAPIHono } from '@hono/zod-openapi'
-import { Scalar } from '@scalar/hono-api-reference'
+import { swaggerUI } from '@hono/swagger-ui'
 import { cors } from 'hono/cors'
 import { registerSensorRoutes } from './routes/sensor.js'
 import { createSensorStore } from './sensor-store.js'
@@ -47,9 +47,9 @@ export const createApp = ({ sensorStore = createSensorStore() } = {}) => {
 
   app.get(
     '/docs',
-    Scalar({
+    swaggerUI({
       url: '/openapi.json',
-      pageTitle: 'SafeSpot Toronto — Sensor API Docs'
+      title: 'SafeSpot Toronto — Sensor API Docs'
     })
   )
 
