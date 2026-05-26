@@ -49,12 +49,14 @@ function makeIcon(emoji) {
 const coolingIcon = makeIcon("❄️");
 const libraryIcon = makeIcon("📚");
 
-export default function ShelterMarkers({ userLocation, onSheltersLoaded }) {
+export default function ShelterMarkers({ userLocation, onSheltersLoaded, onHeatDataLoaded }) {
   const [coolingFeatures, setCoolingFeatures] = useState([]);
   const [libraryFeatures, setLibraryFeatures] = useState([]);
   const [heatData, setHeatData] = useState(null);
   const onSheltersLoadedRef = useRef(onSheltersLoaded);
   onSheltersLoadedRef.current = onSheltersLoaded;
+  const onHeatDataLoadedRef = useRef(onHeatDataLoaded);
+  onHeatDataLoadedRef.current = onHeatDataLoaded;
 
   const center = userLocation
     ? [userLocation.lat, userLocation.lng]
@@ -109,7 +111,10 @@ export default function ShelterMarkers({ userLocation, onSheltersLoaded }) {
 
     fetch(HEAT_URL)
       .then((r) => r.json())
-      .then(setHeatData)
+      .then((data) => {
+        setHeatData(data);
+        onHeatDataLoadedRef.current?.(data.features || []);
+      })
       .catch((err) => console.error("Failed to load heat data:", err));
   }, []);
 
