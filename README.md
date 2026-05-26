@@ -21,24 +21,24 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 
 ## 👥 Team codeXperts
 
-| Name | Role |
-|------|------|
-| **Gary** | Hardware — Raspberry Pi & Temperature Sensor |
-| **Marcos** | Backend — Node.js (Hono + Drizzle + SQLite) |
-| **Paul** | Frontend — Next.js, Leaflet.js Map Integration |
-| **Seulgi** | Frontend — UI/UX Design, Alert System |
-| **Arun** | Frontend — GPS Location, Nearest Shelter Routing |
+| Name       | Role                                             |
+| ---------- | ------------------------------------------------ |
+| **Gary**   | Hardware — Raspberry Pi & Temperature Sensor     |
+| **Marcos** | Backend — Node.js (Hono + Drizzle + SQLite)      |
+| **Paul**   | Frontend — Next.js, Leaflet.js Map Integration   |
+| **Seulgi** | Frontend — UI/UX Design, Alert System            |
+| **Arun**   | Frontend — GPS Location, Nearest Shelter Routing |
 
 ---
 
 ## ⚙️ Tech Stack
 
-| Layer | Technology |
-|-------|-----------|
-| Frontend | Next.js, Tailwind CSS, Leaflet.js |
-| Backend | Hono.js (Node.js) + Drizzle ORM + SQLite |
-| Hardware | Raspberry Pi + Temperature Sensor |
-| Map Library | Leaflet.js with GeoJSON layers |
+| Layer        | Technology                                 |
+| ------------ | ------------------------------------------ |
+| Frontend     | Next.js, Tailwind CSS, Leaflet.js          |
+| Backend      | Hono.js (Node.js) + Drizzle ORM + SQLite   |
+| Hardware     | Raspberry Pi + Temperature Sensor          |
+| Map Library  | Leaflet.js with GeoJSON layers             |
 | Data Sources | ArcGIS REST API, City of Toronto Open Data |
 
 ---
@@ -46,21 +46,25 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 ## ✨ Core Features
 
 ### 🗺️ 1. Heat Risk Map
+
 - Interactive Leaflet map with Toronto's urban heat island layer
 - Colour-coded zones: 🔴 High / 🟡 Medium / 🟢 Low risk
-- Data from ArcGIS: *Impervious Surface and Urban Heat Island Effect in Toronto*
+- Data from ArcGIS: _Impervious Surface and Urban Heat Island Effect in Toronto_
 
 ### 🌡️ 2. Real-Time Temperature Monitoring
+
 - Raspberry Pi sensor deployed in a high-risk heat zone
 - Sensor readings sent to Hono backend at regular intervals
 - Live data point displayed on the map
 
 ### 🚨 3. Danger Threshold Alert
+
 - Alert banner triggered when temperature exceeds **35°C**
 - Displays current temperature and risk level
 - Highlights nearby cooling centres and libraries on the map
 
 ### 📍 4. Nearest Safe Space Routing
+
 - Browser GPS detects the user's current location
 - Calculates and displays the closest cooling centre or library
 - Shows distance and name of the nearest safe space
@@ -69,25 +73,25 @@ SafeSpot Toronto visualizes heat risk zones across the city, monitors live tempe
 
 ## 📡 Data Sources
 
-| Dataset | Source | Format |
-|---------|--------|--------|
-| Urban Heat Island Effect | ArcGIS REST API (Seneca) | GeoJSON |
-| Air Conditioned & Cool Spaces | City of Toronto Open Data | GeoJSON |
-| Library Branch Locations | City of Toronto Open Data | GeoJSON |
-| Live Temperature | Raspberry Pi Sensor | POST via Hono |
+| Dataset                       | Source                    | Format        |
+| ----------------------------- | ------------------------- | ------------- |
+| Urban Heat Island Effect      | ArcGIS REST API (Seneca)  | GeoJSON       |
+| Air Conditioned & Cool Spaces | City of Toronto Open Data | GeoJSON       |
+| Library Branch Locations      | City of Toronto Open Data | GeoJSON       |
+| Live Temperature              | Raspberry Pi Sensor       | POST via Hono |
 
 ---
 
 ## 🔌 API Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/api/heat-data` | Returns heat island GeoJSON |
-| `GET` | `/api/cooling-centres` | Returns cooling centre locations |
-| `GET` | `/api/libraries` | Returns library branch locations |
-| `POST` | `/api/sensor-data` | Receives temperature from Raspberry Pi |
-| `GET` | `/api/sensor-latest` | Returns most recent sensor reading |
-| `POST` | `/api/sensor-override` | Manual temperature input for testing |
+| Method | Endpoint               | Description                            |
+| ------ | ---------------------- | -------------------------------------- |
+| `GET`  | `/api/heat-data`       | Returns heat island GeoJSON            |
+| `GET`  | `/api/cooling-centres` | Returns cooling centre locations       |
+| `GET`  | `/api/libraries`       | Returns library branch locations       |
+| `POST` | `/api/sensor-data`     | Receives temperature from Raspberry Pi |
+| `GET`  | `/api/sensor-latest`   | Returns most recent sensor reading     |
+| `POST` | `/api/sensor-override` | Manual temperature input for testing   |
 
 ---
 
@@ -124,26 +128,28 @@ SafeSpot/
 ## 🗓️ Development Plan
 
 ### Day 1
-| Task | Owner | Goal |
-|------|-------|------|
-| Hono project setup | Marcos | Server running locally |
-| ArcGIS heat data fetch | Marcos | `GET /api/heat-data` working |
-| Cooling centres + libraries fetch | Marcos | GET endpoints working |
-| Next.js + Leaflet setup | Paul | Toronto map rendered |
-| Heat island layer on map | Paul | GeoJSON zones displayed |
-| Raspberry Pi sensor setup | Gary | Temperature readings confirmed |
-| UI wireframe | Seulgi | Screen layout designed |
+
+| Task                              | Owner  | Goal                           |
+| --------------------------------- | ------ | ------------------------------ |
+| Hono project setup                | Marcos | Server running locally         |
+| ArcGIS heat data fetch            | Marcos | `GET /api/heat-data` working   |
+| Cooling centres + libraries fetch | Marcos | GET endpoints working          |
+| Next.js + Leaflet setup           | Paul   | Toronto map rendered           |
+| Heat island layer on map          | Paul   | GeoJSON zones displayed        |
+| Raspberry Pi sensor setup         | Gary   | Temperature readings confirmed |
+| UI wireframe                      | Seulgi | Screen layout designed         |
 
 ### Day 2
-| Task | Owner | Goal |
-|------|-------|------|
-| Cooling centre + library pins | Arun | Markers visible on map |
-| GPS location detection | Arun | Browser location API working |
-| Nearest safe space calculation | Arun | Distance logic implemented |
-| Alert banner UI | Seulgi | Warning shown on threshold |
-| Sensor POST to FastAPI | Gary | Live data flowing to backend |
-| Sensor data point on map | Paul | Live marker on map |
-| Full integration test | All | Demo scenario runs end to end |
+
+| Task                           | Owner  | Goal                          |
+| ------------------------------ | ------ | ----------------------------- |
+| Cooling centre + library pins  | Arun   | Markers visible on map        |
+| GPS location detection         | Arun   | Browser location API working  |
+| Nearest safe space calculation | Arun   | Distance logic implemented    |
+| Alert banner UI                | Seulgi | Warning shown on threshold    |
+| Sensor POST to the Backend     | Gary   | Live data flowing to backend  |
+| Sensor data point on map       | Paul   | Live marker on map            |
+| Full integration test          | All    | Demo scenario runs end to end |
 
 ---
 
@@ -160,13 +166,13 @@ SafeSpot/
 
 ## ✅ How We Address Problem Statement 2
 
-| PS2 Requirement | Our Solution |
-|----------------|--------------|
-| Visualize climate risk areas | Urban heat island layer on interactive map |
-| Identify vulnerable communities | Heat zone colour coding by risk level |
-| Show proximity to safe shelter | Cooling centres & libraries with GPS routing |
-| Help communities prepare | Real-time alerts + nearest safe space guidance |
-| Innovative data approach | Live Raspberry Pi sensor adds real hardware dimension |
+| PS2 Requirement                 | Our Solution                                          |
+| ------------------------------- | ----------------------------------------------------- |
+| Visualize climate risk areas    | Urban heat island layer on interactive map            |
+| Identify vulnerable communities | Heat zone colour coding by risk level                 |
+| Show proximity to safe shelter  | Cooling centres & libraries with GPS routing          |
+| Help communities prepare        | Real-time alerts + nearest safe space guidance        |
+| Innovative data approach        | Live Raspberry Pi sensor adds real hardware dimension |
 
 ---
 
