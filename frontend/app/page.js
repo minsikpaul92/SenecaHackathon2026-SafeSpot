@@ -478,19 +478,37 @@ export default function Home() {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
 
+      // Custom smooth scroll with easeInOutQuart — much smoother than browser default
+      function smoothScrollTo(targetY, duration = 900) {
+        const startY = window.scrollY;
+        const diff = targetY - startY;
+        if (Math.abs(diff) < 1) return;
+        const startTime = performance.now();
+        // easeInOutQuart: slow start, fast middle, slow end
+        const ease = (t) => t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+        // Scale duration with distance so short hops don't feel slow
+        const scaledDuration = Math.min(Math.max(Math.abs(diff) / 3, 500), duration);
+        const step = (now) => {
+          const elapsed = now - startTime;
+          const progress = Math.min(elapsed / scaledDuration, 1);
+          window.scrollTo(0, startY + diff * ease(progress));
+          if (progress < 1) requestAnimationFrame(step);
+        };
+        requestAnimationFrame(step);
+      }
+
       // Smooth scroll for nav links
       navLinks.forEach(link => {
         link.addEventListener('click', (e) => {
           e.preventDefault();
           const targetId = link.getAttribute('href').slice(1);
-          // For Live Map: skip the heading, scroll directly to the map widget
           const scrollTarget = targetId === 'dashboard'
             ? (document.getElementById('map-widget') || document.getElementById(targetId))
             : document.getElementById(targetId);
           if (scrollTarget) {
             const navH = document.querySelector('header')?.offsetHeight || 64;
             const y = scrollTarget.getBoundingClientRect().top + window.scrollY - navH - 8;
-            window.scrollTo({ top: y, behavior: 'smooth' });
+            smoothScrollTo(y);
           }
         });
       });
