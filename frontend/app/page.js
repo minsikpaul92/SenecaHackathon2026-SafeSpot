@@ -954,17 +954,17 @@ export default function Home() {
           </div>
           
           <div className="flex flex-col gap-3 shrink-0 md:mb-1">
-            <a href="https://www.cbc.ca/news/canada/british-columbia/bc-heat-dome-sudden-deaths-570-1.6122316" target="_blank" className="cite-item md:opacity-0 md:translate-y-4 transition-all duration-500 flex items-center gap-3 text-sm font-medium border border-white/10 bg-white/5 hover:bg-white/10 rounded-full pl-3 pr-4 py-2 group">
+            <a href="https://www.cbc.ca/news/canada/british-columbia/bc-heat-dome-sudden-deaths-570-1.6122316" target="_blank" className="cite-item opacity-0 translate-y-4 transition-all duration-500 flex items-center gap-3 text-sm font-medium border border-white/10 bg-white/5 hover:bg-white/10 rounded-full pl-3 pr-4 py-2 group">
               <span className="text-xs font-semibold bg-red-500/20 text-red-400 px-2.5 py-1 rounded-full w-[60px] text-center">CBC</span>
               <span className="text-neutral-300">B.C. Sudden Deaths (2021)</span>
               <i data-lucide="arrow-up-right" className="w-4 h-4 text-neutral-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform"></i>
             </a>
-            <a href="https://climateinstitute.ca/reports/extreme-heat-in-canada/" target="_blank" className="cite-item md:opacity-0 md:translate-y-4 transition-all duration-500 [transition-delay:150ms] flex items-center gap-3 text-sm font-medium border border-white/10 bg-white/5 hover:bg-white/10 rounded-full pl-3 pr-4 py-2 group">
+            <a href="https://climateinstitute.ca/reports/extreme-heat-in-canada/" target="_blank" className="cite-item opacity-0 translate-y-4 transition-all duration-500 [transition-delay:150ms] flex items-center gap-3 text-sm font-medium border border-white/10 bg-white/5 hover:bg-white/10 rounded-full pl-3 pr-4 py-2 group">
               <span className="text-xs font-semibold bg-cyan-500/20 text-cyan-400 px-2.5 py-1 rounded-full w-[60px] text-center">Report</span>
               <span className="text-neutral-300">Extreme Heat in Canada (2023)</span>
               <i data-lucide="arrow-up-right" className="w-4 h-4 text-neutral-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform"></i>
             </a>
-            <a href="https://www.cbc.ca/news/canada/montreal/heat-wave-death-toll-1.4740031" target="_blank" className="cite-item md:opacity-0 md:translate-y-4 transition-all duration-500 [transition-delay:300ms] flex items-center gap-3 text-sm font-medium border border-white/10 bg-white/5 hover:bg-white/10 rounded-full pl-3 pr-4 py-2 group">
+            <a href="https://www.cbc.ca/news/canada/montreal/heat-wave-death-toll-1.4740031" target="_blank" className="cite-item opacity-0 translate-y-4 transition-all duration-500 [transition-delay:300ms] flex items-center gap-3 text-sm font-medium border border-white/10 bg-white/5 hover:bg-white/10 rounded-full pl-3 pr-4 py-2 group">
               <span className="text-xs font-semibold bg-red-500/20 text-red-400 px-2.5 py-1 rounded-full w-[60px] text-center">CBC</span>
               <span className="text-neutral-300">Montreal Heat Wave (2018)</span>
               <i data-lucide="arrow-up-right" className="w-4 h-4 text-neutral-500 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 transition-transform"></i>
