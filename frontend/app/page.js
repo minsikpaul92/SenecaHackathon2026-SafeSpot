@@ -190,6 +190,7 @@ export default function Home() {
   const [selectedShelterType, setSelectedShelterType] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locationDetail, setLocationDetail] = useState('');
+  const [locationModalOpen, setLocationModalOpen] = useState(false);
 
   const getBannerAlert = () => {
     if (activeTemp === null) return null;
@@ -710,6 +711,77 @@ export default function Home() {
       <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
       <AlertBanner alert={getBannerAlert()} />
 
+      {/* Location Modal */}
+      {locationModalOpen && userPos && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-6 bg-black/70 backdrop-blur-sm"
+          onClick={() => setLocationModalOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-sm bg-[#0d0d0d] border border-white/10 rounded-2xl p-6 shadow-[0_20px_60px_rgba(0,0,0,0.8)] flex flex-col gap-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header */}
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-cyan-400">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="12" cy="12" r="4"/>
+                  <path d="M13 4.069V2h-2v2.069A8.01 8.01 0 0 0 4.069 11H2v2h2.069A8.008 8.008 0 0 0 11 19.931V22h2v-2.069A8.007 8.007 0 0 0 19.931 13H22v-2h-2.069A8.008 8.008 0 0 0 13 4.069zM12 18c-3.309 0-6-2.691-6-6s2.691-6 6-6 6 2.691 6 6-2.691 6-6 6z"/>
+                </svg>
+                <span className="font-semibold text-[15px]">Your Location</span>
+              </div>
+              <button
+                onClick={() => setLocationModalOpen(false)}
+                className="p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-colors"
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
+            </div>
+
+            {/* Address */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] text-neutral-500 uppercase tracking-widest font-medium">Address</span>
+              <div className="flex items-start justify-between gap-3">
+                <span className="text-[22px] font-semibold text-white leading-tight">
+                  {locationDetail || locationText || 'Unknown'}
+                </span>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(locationDetail || locationText || '')}
+                  className="shrink-0 mt-1 p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-colors"
+                  title="Copy address"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+
+            <div className="h-px bg-white/[0.06]"></div>
+
+            {/* Coordinates */}
+            <div className="flex flex-col gap-1.5">
+              <span className="text-[11px] text-neutral-500 uppercase tracking-widest font-medium">Coordinates (5 decimal places)</span>
+              <div className="flex items-center justify-between gap-3">
+                <span className="text-[26px] font-mono font-bold text-cyan-400 leading-tight tracking-tight">
+                  {userPos.lat.toFixed(5)},<br/>{userPos.lng.toFixed(5)}
+                </span>
+                <button
+                  onClick={() => navigator.clipboard?.writeText(`${userPos.lat.toFixed(5)}, ${userPos.lng.toFixed(5)}`)}
+                  className="shrink-0 p-1.5 rounded-lg text-neutral-500 hover:text-cyan-400 hover:bg-white/10 transition-colors"
+                  title="Copy coordinates"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                </button>
+              </div>
+            </div>
+
+            {/* 911 note */}
+            <div className="bg-red-500/10 border border-red-500/20 rounded-xl px-3 py-2.5 text-[12px] text-red-300 leading-relaxed">
+              🚨 <span className="font-semibold">In an emergency:</span> Call 911 and read these coordinates aloud.
+            </div>
+          </div>
+        </div>
+      )}
+
       
 
 
@@ -1101,9 +1173,16 @@ export default function Home() {
 
                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                   {/*  Your Location Bar  */}
-                  <div className="bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 flex items-start justify-between gap-2">
+                  <div
+                    className={`bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 flex items-start justify-between gap-2 ${userPos ? 'cursor-pointer hover:border-cyan-500/30 hover:bg-white/[0.04] transition-colors' : ''}`}
+                    onClick={() => userPos && setLocationModalOpen(true)}
+                    title={userPos ? 'Click to view full location' : ''}
+                  >
                     <div className="flex flex-col min-w-0 gap-1">
-                      <span className="text-[10px] text-neutral-500 font-medium uppercase tracking-wider">📍 Your Location</span>
+                      <span className="text-[10px] text-neutral-500 font-medium uppercase tracking-wider flex items-center gap-1">
+                        📍 Your Location
+                        {userPos && <span className="text-[9px] text-cyan-600 normal-case tracking-normal">(tap to expand)</span>}
+                      </span>
                       {userPos ? (
                         <>
                           <span className="text-[12px] text-cyan-400 font-semibold truncate">
@@ -1118,7 +1197,7 @@ export default function Home() {
                       )}
                     </div>
                     <button
-                      onClick={() => requestUserLocation(true)}
+                      onClick={(e) => { e.stopPropagation(); requestUserLocation(true); }}
                       className="p-2 rounded-lg bg-white/5 hover:bg-white/10 text-neutral-400 hover:text-cyan-400 transition-colors shrink-0 mt-0.5"
                       title="Detect Location"
                     >
