@@ -190,6 +190,7 @@ export default function Home() {
   const [selectedShelterType, setSelectedShelterType] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [locationDetail, setLocationDetail] = useState('');
+  const [locationFull, setLocationFull] = useState('');
   const [locationModalOpen, setLocationModalOpen] = useState(false);
 
   const getBannerAlert = () => {
@@ -649,11 +650,13 @@ export default function Home() {
         const cachedCoords = localStorage.getItem('safespot_coords');
         const cachedLoc = localStorage.getItem('safespot_location');
         const cachedDetail = localStorage.getItem('safespot_location_detail');
+        const cachedFull = localStorage.getItem('safespot_location_full');
         if (cachedCoords && cachedLoc) {
           try {
             setUserPos(JSON.parse(cachedCoords));
             setLocationText(cachedLoc);
             setLocationDetail(cachedDetail || cachedLoc);
+            setLocationFull(cachedFull || cachedDetail || cachedLoc);
             return;
           } catch(e) {}
         }
@@ -672,28 +675,37 @@ export default function Home() {
           localStorage.setItem('safespot_coords', JSON.stringify(coords));
           window.dispatchEvent(new CustomEvent("safespot-gps-updated", { detail: coords }));
           
-          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=14&addressdetails=1`)
+          fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`)
             .then(res => res.json())
             .then(data => {
               const addr = data.address || {};
               const city = addr.city || addr.town || addr.village || '';
               const province = addr.state || '';
               const postal = addr.postcode || '';
+              const road = addr.road || '';
+              const houseNo = addr.house_number || '';
+              const street = houseNo && road ? `${houseNo} ${road}` : road;
               // Navbar: "Toronto, Ontario"
-              const navLabel = city && province ? `${city}, ${province}` : city || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
-              // Dashboard: "Toronto, Ontario M5A 1A1"
+              const navLabel = city && province ? `${city}, ${province}` : city || `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
+              // Dashboard card: "Toronto, Ontario M5A 1A1"
               const detailLabel = navLabel + (postal ? ` ${postal}` : '');
+              // Modal: "123 Main St, Toronto, Ontario M5A 1A1"
+              const fullLabel = street ? `${street}, ${detailLabel}` : detailLabel;
               setLocationText(navLabel);
               setLocationDetail(detailLabel);
+              setLocationFull(fullLabel);
               localStorage.setItem('safespot_location', navLabel);
               localStorage.setItem('safespot_location_detail', detailLabel);
+              localStorage.setItem('safespot_location_full', fullLabel);
             })
             .catch(() => {
-              const fallback = `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`;
+              const fallback = `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`;
               setLocationText(fallback);
               setLocationDetail(fallback);
+              setLocationFull(fallback);
               localStorage.setItem('safespot_location', fallback);
               localStorage.setItem('safespot_location_detail', fallback);
+              localStorage.setItem('safespot_location_full', fallback);
             });
         },
         () => {
@@ -743,10 +755,10 @@ export default function Home() {
               <span className="text-[11px] text-neutral-500 uppercase tracking-widest font-medium">Address</span>
               <div className="flex items-start justify-between gap-3">
                 <span className="text-[22px] font-semibold text-white leading-tight">
-                  {locationDetail || locationText || 'Unknown'}
+                  {locationFull || locationDetail || locationText || 'Unknown'}
                 </span>
                 <button
-                  onClick={() => navigator.clipboard?.writeText(locationDetail || locationText || '')}
+                  onClick={() => navigator.clipboard?.writeText(locationFull || locationDetail || locationText || '')}
                   className="shrink-0 mt-1 p-1.5 rounded-lg text-neutral-500 hover:text-white hover:bg-white/10 transition-colors"
                   title="Copy address"
                 >
@@ -1174,14 +1186,12 @@ export default function Home() {
                  <div className="h-px w-full bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
                   {/*  Your Location Bar  */}
                   <div
-                    className={`bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 flex items-start justify-between gap-2 ${userPos ? 'cursor-pointer hover:border-cyan-500/30 hover:bg-white/[0.04] transition-colors' : ''}`}
+                    className={`bg-white/[0.02] border border-white/5 rounded-xl px-3 py-2.5 flex items-start justify-between gap-2 transition-all duration-300 ${userPos ? 'cursor-pointer location-card-hover' : ''}`}
                     onClick={() => userPos && setLocationModalOpen(true)}
-                    title={userPos ? 'Click to view full location' : ''}
                   >
                     <div className="flex flex-col min-w-0 gap-1">
-                      <span className="text-[10px] text-neutral-500 font-medium uppercase tracking-wider flex items-center gap-1">
+                      <span className="text-[10px] text-neutral-500 font-medium uppercase tracking-wider">
                         📍 Your Location
-                        {userPos && <span className="text-[9px] text-cyan-600 normal-case tracking-normal">(tap to expand)</span>}
                       </span>
                       {userPos ? (
                         <>
