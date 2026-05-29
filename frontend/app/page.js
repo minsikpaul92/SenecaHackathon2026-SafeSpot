@@ -128,6 +128,46 @@ function getPillStyles(temp) {
   };
 }
 
+function getBearing(lat1, lng1, lat2, lng2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const dLng = toRad(lng2 - lng1);
+  const y = Math.sin(dLng) * Math.cos(toRad(lat2));
+  const x = Math.cos(toRad(lat1)) * Math.sin(toRad(lat2)) - Math.sin(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.cos(dLng);
+  return (Math.atan2(y, x) * (180 / Math.PI) + 360) % 360;
+}
+
+function bearingToCompass(deg) {
+  const dirs = ["N", "NE", "E", "SE", "S", "SW", "W", "NW"];
+  return dirs[Math.round(deg / 45) % 8];
+}
+
+function pointInPolygon(point, polygon) {
+  const [px, py] = point;
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const [xi, yi] = polygon[i];
+    const [xj, yj] = polygon[j];
+    if (yi > py !== yj > py && px < ((xj - xi) * (py - yi)) / (yj - yi) + xi) {
+      inside = !inside;
+    }
+  }
+  return inside;
+}
+
+function detectHeatZone(userPos, features) {
+  if (!userPos || !features || features.length === 0) return null;
+  const pt = [userPos.lng, userPos.lat];
+  const matching = features.filter(f => {
+    const geom = f.geometry;
+    if (!geom) return false;
+    const rings = geom.type === 'Polygon' ? [geom.coordinates[0]] : geom.type === 'MultiPolygon' ? geom.coordinates.map(p => p[0]) : [];
+    return rings.some(ring => pointInPolygon(pt, ring));
+  }).map(f => f.properties?.SurfTemp_Tess_MEAN ?? 0);
+  if (matching.length === 0) return null;
+  const maxTemp = Math.max(...matching);
+  return maxTemp >= 30 ? 'high' : maxTemp >= 25 ? 'medium' : 'low';
+}
+
 export default function Home() {
   const [locationText, setLocationText] = useState('Detect location');
 
@@ -144,6 +184,10 @@ export default function Home() {
   const [nearestShelter, setNearestShelter] = useState(null);
   const [nearestCooling, setNearestCooling] = useState(null);
   const [nearestLibrary, setNearestLibrary] = useState(null);
+  const [heatFeatures, setHeatFeatures] = useState([]);
+  const [currentZone, setCurrentZone] = useState(null);
+  const [nearestBearing, setNearestBearing] = useState(null);
+  const [selectedShelterType, setSelectedShelterType] = useState(null);
 
   const getBannerAlert = () => {
     if (activeTemp === null) return null;
@@ -188,16 +232,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => {
-    if (mapRef.current && userPos) {
-      mapRef.current.setView([userPos.lat, userPos.lng], 14);
-      // Optional: Add a marker for user
-      if (typeof L !== 'undefined') {
-        L.marker([userPos.lat, userPos.lng]).addTo(mapRef.current)
-          .bindPopup("You are here").openPopup();
-      }
-    }
-  }, [userPos]);
 
 
   // Poll Weather Data
@@ -242,10 +276,19 @@ export default function Home() {
     
     if (cooling.length > 0) setNearestCooling(cooling[0]);
     if (libraries.length > 0) setNearestLibrary(libraries[0]);
-    
+
     const overall = [...withDist].sort((a, b) => a.distance - b.distance);
-    setNearestShelter(overall[0]);
+    const nearest = overall[0];
+    setNearestShelter(nearest);
+    if (nearest) {
+      setNearestBearing(getBearing(userPos.lat, userPos.lng, nearest.lat, nearest.lng));
+      setSelectedShelterType(prev => prev ?? nearest.type);
+    }
   }, [userPos, sheltersList]);
+
+  useEffect(() => {
+    setCurrentZone(detectHeatZone(userPos, heatFeatures));
+  }, [userPos, heatFeatures]);
 
 
   useEffect(() => {
@@ -303,17 +346,17 @@ export default function Home() {
                 style: function(feature) {
                     const temp = feature.properties.SurfTemp_Tess_MEAN || 20;
                     let color, opacity;
-                    // 노란색 -> 주황색 -> 빨간색 순으로 명확한 온도 구분
                     if (temp >= 30) {
-                        color = "#dc2626"; opacity = 0.85; // 빨간색 (High Heat)
+                        color = "#dc2626"; opacity = 0.85;
                     } else if (temp >= 25) {
-                        color = "#f97316"; opacity = 0.65; // 주황색 (Moderate Heat)
+                        color = "#f97316"; opacity = 0.65;
                     } else {
-                        color = "#facc15"; opacity = 0.45; // 노란색 (Low Heat)
+                        color = "#facc15"; opacity = 0.45;
                     }
                     return { fillColor: color, fillOpacity: opacity, weight: 0, stroke: false };
                 }
             }).addTo(map);
+            if (data.features) setHeatFeatures(data.features);
         }).catch(e => console.error("Heat data load failed", e));
 
         fetch(COOLING_URL).then(r=>r.json()).then(data => {
@@ -346,11 +389,15 @@ export default function Home() {
             iconSize: [24, 24],
             iconAnchor: [12, 12]
         });
-        const userMarker = L.marker([initialLat, initialLng], {icon: userIcon}).addTo(map).bindTooltip("<b>You are here</b>", {direction: 'top', offset: [0, -10]});
+        let userMarker = null;
 
         window.addEventListener('safespot-gps-updated', (e) => {
             const { lat, lng } = e.detail;
-            userMarker.setLatLng([lat, lng]);
+            if (!userMarker) {
+                userMarker = L.marker([lat, lng], {icon: userIcon}).addTo(map).bindTooltip("<b>You are here</b>", {direction: 'top', offset: [0, -10]});
+            } else {
+                userMarker.setLatLng([lat, lng]);
+            }
             map.flyTo([lat, lng], 14, { duration: 1.2 });
         });
 
@@ -426,6 +473,18 @@ export default function Home() {
       backToTopBtn.addEventListener('click', () => {
         window.scrollTo({ top: 0, behavior: 'smooth' });
       });
+
+      // Smooth scroll for nav links
+      navLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+          e.preventDefault();
+          const targetId = link.getAttribute('href').slice(1);
+          const target = document.getElementById(targetId);
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }
+        });
+      });
       
       // Re-initialize icons just in case
       if (typeof window !== 'undefined' && window.lucide) {
@@ -436,18 +495,36 @@ export default function Home() {
       const hwSection = document.getElementById('how-it-works-simple');
       const hwItems = document.querySelectorAll('.hw-scroll-item');
       if(hwSection && hwItems.length > 0) {
+        let wasAllVisible = false;
+        let isStuck = false;
+        let stuckAt = 0;
+        let accumulated = 0;
+        const STICK_THRESHOLD = 280; // wheel delta px before releasing
+
+        // Wheel intercept for stick effect
+        window.addEventListener('wheel', (e) => {
+          if (!isStuck) return;
+          e.preventDefault();
+          accumulated += Math.abs(e.deltaY);
+          if (accumulated >= STICK_THRESHOLD) {
+            isStuck = false;
+            accumulated = 0;
+          }
+        }, { passive: false });
+
         window.addEventListener('scroll', () => {
           const rect = hwSection.getBoundingClientRect();
           const totalScrollHeight = hwSection.offsetHeight - window.innerHeight;
-          
+
           let scrollProgress = 0;
           if (rect.top <= 0) {
             scrollProgress = Math.abs(rect.top) / totalScrollHeight;
           }
-          
           scrollProgress = Math.max(0, Math.min(1, scrollProgress));
-          
-          let activeIndex = Math.floor(scrollProgress * hwItems.length);
+
+          // Items appear during first 55% of scroll
+          const itemProgress = Math.min(scrollProgress / 0.55, 1);
+          let activeIndex = Math.floor(itemProgress * hwItems.length);
           if (activeIndex >= hwItems.length) activeIndex = hwItems.length - 1;
 
           hwItems.forEach((item, index) => {
@@ -459,7 +536,22 @@ export default function Home() {
               item.classList.add('opacity-0', 'translate-y-8', 'pointer-events-none');
             }
           });
-        });
+
+          // Glow + stick: triggers once when all items first become visible
+          const allVisible = scrollProgress > 0.5 && scrollProgress < 0.97;
+          const btn = document.getElementById('view-details-btn');
+          if (btn) {
+            if (allVisible) btn.classList.add('btn-glow');
+            else btn.classList.remove('btn-glow');
+          }
+
+          if (allVisible && !wasAllVisible) {
+            isStuck = true;
+            accumulated = 0;
+          }
+          if (!allVisible) isStuck = false;
+          wasAllVisible = allVisible;
+        }, { passive: true });
       }
 
       // -------------------------------------------------------------
@@ -497,6 +589,7 @@ export default function Home() {
             lat: coords ? coords.lat : null,
             lng: coords ? coords.lng : null,
             name: f.properties.LocationName || f.properties.locationName || f.properties.NAME || 'Cooling Center',
+            address: f.properties.address || f.properties.Address || f.properties.ADDRESSLINE1 || '',
             type: 'cooling'
           };
         }).filter(s => s.lat !== null && s.lng !== null);
@@ -509,6 +602,7 @@ export default function Home() {
             lat: coords ? coords.lat : null,
             lng: coords ? coords.lng : null,
             name: f.properties.BranchName || 'Library',
+            address: f.properties.Address || f.properties.address || '',
             type: 'library'
           };
         }).filter(s => s.lat !== null && s.lng !== null);
@@ -570,9 +664,6 @@ export default function Home() {
       );
   };
 
-  useEffect(() => {
-    requestUserLocation(false);
-  }, []);
 
   return (
     <>
@@ -683,7 +774,7 @@ export default function Home() {
 
 
       {/*  How It Works (Simple Horizontal View - Scrollytelling)  */}
-      <section id="how-it-works-simple" className="w-full relative h-[200vh] bg-[#000000]">
+      <section id="how-it-works-simple" className="w-full relative h-[260vh] bg-[#000000]">
         <div className="sticky top-0 h-screen w-full flex flex-col justify-center overflow-hidden border-b border-white/[0.05]">
           <div className="w-full max-w-[1200px] mx-auto px-6">
             <div className="mb-20">
@@ -742,7 +833,7 @@ export default function Home() {
               </div>
             </div>
 
-            <button onClick={() => {document.getElementById('how-it-works-simple').classList.add('hidden'); document.getElementById('how-it-works-detailed').classList.remove('hidden'); setTimeout(() => document.getElementById('how-it-works-detailed').scrollIntoView({ behavior: 'smooth' }), 50);}} className="flex items-center gap-2 text-[15px] font-medium text-neutral-400 hover:text-white transition-colors group mt-10">
+            <button id="view-details-btn" onClick={() => {document.getElementById('how-it-works-simple').classList.add('hidden'); document.getElementById('how-it-works-detailed').classList.remove('hidden'); setTimeout(() => document.getElementById('how-it-works-detailed').scrollIntoView({ behavior: 'smooth' }), 50);}} className="flex items-center gap-2 text-[15px] font-medium text-neutral-400 hover:text-white transition-all group mt-10 px-4 py-2 rounded-lg">
               <span>View all details</span> <span className="group-hover:translate-x-1 transition-transform">→</span>
             </button>
           </div>
@@ -958,16 +1049,30 @@ export default function Home() {
                   </div>
 
                   {/*  Nearest Cooling Centre Card  */}
-                  <div className="bg-[#141824]/40 border border-blue-500/20 rounded-xl p-3 flex flex-col gap-1">
-                    <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center gap-1">❄️ Nearest Cooling Centre</div>
+                  <div
+                    className={`border rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-all ${selectedShelterType === 'cooling' ? 'bg-[#141824]/80 border-blue-400/60 ring-1 ring-blue-400/30' : 'bg-[#141824]/40 border-blue-500/20 hover:border-blue-400/40'}`}
+                    onClick={() => userPos && nearestCooling && setSelectedShelterType('cooling')}
+                  >
+                    <div className="text-[10px] font-bold text-blue-400 uppercase tracking-wider flex items-center justify-between gap-1">
+                      <span>❄️ Nearest Cooling Centre</span>
+                      {selectedShelterType === 'cooling' && <span className="text-[9px] bg-blue-500/20 text-blue-300 px-1.5 py-0.5 rounded-full">Selected</span>}
+                    </div>
                     {userPos && nearestCooling ? (
                       <>
                         <div className="text-[13px] font-semibold text-white truncate mt-1" title={nearestCooling.name}>{nearestCooling.name}</div>
                         <div className="text-[10px] text-neutral-400 truncate">{nearestCooling.address || 'Address not listed'}</div>
                         <div className="flex items-center justify-between mt-1 text-[11px]">
-                          <span className="font-semibold text-blue-400">{nearestCooling.distance.toFixed(2)} km</span>
-                          <button 
-                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&origin=${userPos.lat},${userPos.lng}&destination=${nearestCooling.lat},${nearestCooling.lng}`, "_blank")}
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-blue-400">{nearestCooling.distance.toFixed(2)} km</span>
+                            {selectedShelterType === 'cooling' && (
+                              <span className="flex items-center gap-0.5 text-cyan-400">
+                                <span style={{ transform: `rotate(${getBearing(userPos.lat, userPos.lng, nearestCooling.lat, nearestCooling.lng)}deg)`, display: 'inline-block' }}>↑</span>
+                                {bearingToCompass(getBearing(userPos.lat, userPos.lng, nearestCooling.lat, nearestCooling.lng))}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/?api=1&origin=${userPos.lat},${userPos.lng}&destination=${nearestCooling.lat},${nearestCooling.lng}`, "_blank"); }}
                             className="text-blue-400 hover:text-blue-300 font-medium flex items-center gap-0.5"
                           >
                             🗺️ Directions
@@ -980,16 +1085,30 @@ export default function Home() {
                   </div>
 
                   {/*  Nearest Library Card  */}
-                  <div className="bg-[#121c17]/40 border border-green-500/20 rounded-xl p-3 flex flex-col gap-1">
-                    <div className="text-[10px] font-bold text-green-400 uppercase tracking-wider flex items-center gap-1">📚 Nearest Library</div>
+                  <div
+                    className={`border rounded-xl p-3 flex flex-col gap-1 cursor-pointer transition-all ${selectedShelterType === 'library' ? 'bg-[#121c17]/80 border-green-400/60 ring-1 ring-green-400/30' : 'bg-[#121c17]/40 border-green-500/20 hover:border-green-400/40'}`}
+                    onClick={() => userPos && nearestLibrary && setSelectedShelterType('library')}
+                  >
+                    <div className="text-[10px] font-bold text-green-400 uppercase tracking-wider flex items-center justify-between gap-1">
+                      <span>📚 Nearest Library</span>
+                      {selectedShelterType === 'library' && <span className="text-[9px] bg-green-500/20 text-green-300 px-1.5 py-0.5 rounded-full">Selected</span>}
+                    </div>
                     {userPos && nearestLibrary ? (
                       <>
                         <div className="text-[13px] font-semibold text-white truncate mt-1" title={nearestLibrary.name}>{nearestLibrary.name}</div>
                         <div className="text-[10px] text-neutral-400 truncate">{nearestLibrary.address || 'Address not listed'}</div>
                         <div className="flex items-center justify-between mt-1 text-[11px]">
-                          <span className="font-semibold text-green-400">{nearestLibrary.distance.toFixed(2)} km</span>
-                          <button 
-                            onClick={() => window.open(`https://www.google.com/maps/dir/?api=1&origin=${userPos.lat},${userPos.lng}&destination=${nearestLibrary.lat},${nearestLibrary.lng}`, "_blank")}
+                          <div className="flex items-center gap-2">
+                            <span className="font-semibold text-green-400">{nearestLibrary.distance.toFixed(2)} km</span>
+                            {selectedShelterType === 'library' && (
+                              <span className="flex items-center gap-0.5 text-cyan-400">
+                                <span style={{ transform: `rotate(${getBearing(userPos.lat, userPos.lng, nearestLibrary.lat, nearestLibrary.lng)}deg)`, display: 'inline-block' }}>↑</span>
+                                {bearingToCompass(getBearing(userPos.lat, userPos.lng, nearestLibrary.lat, nearestLibrary.lng))}
+                              </span>
+                            )}
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/?api=1&origin=${userPos.lat},${userPos.lng}&destination=${nearestLibrary.lat},${nearestLibrary.lng}`, "_blank"); }}
                             className="text-green-400 hover:text-green-300 font-medium flex items-center gap-0.5"
                           >
                             🗺️ Directions
@@ -1006,39 +1125,70 @@ export default function Home() {
            </div>
            
            {/*   Right Area: Map Visualization   */}
-           <div className="flex-1 relative bg-[#050505] overflow-hidden flex flex-col">
+           <div className="flex-1 min-h-[420px] relative bg-[#050505] overflow-hidden flex flex-col">
               {/*  Actual Map Container  */}
               <div id="map" className="absolute inset-0 z-0"></div>
-              {/* 🧪 Test buttons */}
-              <div 
-                className="absolute top-4 right-4 z-[1000] flex flex-row flex-wrap justify-end gap-2 pointer-events-auto"
+              {/* 🧪 Test buttons + zone info */}
+              <div
+                className="absolute top-4 right-4 z-[1000] flex flex-col items-end gap-2 pointer-events-auto"
                 onPointerDown={(e) => e.stopPropagation()}
                 onClick={(e) => e.stopPropagation()}
                 onDoubleClick={(e) => e.stopPropagation()}
               >
-                <button type="button" onClick={() => setSimulatedTemp(30)} className="text-[13px] px-3 py-2 rounded shadow-lg bg-yellow-500/90 hover:bg-yellow-400 text-black font-bold backdrop-blur-sm transition-transform active:scale-95">⚠️ 30°C</button>
-                <button type="button" onClick={() => setSimulatedTemp(36)} className="text-[13px] px-3 py-2 rounded shadow-lg bg-orange-600/90 hover:bg-orange-500 text-white font-bold backdrop-blur-sm transition-transform active:scale-95">🚨 36°C</button>
-                <button type="button" onClick={() => setSimulatedTemp(41)} className="text-[13px] px-3 py-2 rounded shadow-lg bg-red-700/90 hover:bg-red-600 text-white font-bold backdrop-blur-sm transition-transform active:scale-95">🔴 41°C</button>
-                <button type="button" onClick={() => { setSimulatedTemp(null); setSensorTemp(20.0); if (fetchSensorRef.current) fetchSensorRef.current(); }} className="text-[13px] px-3 py-2 rounded shadow-lg bg-zinc-700/90 hover:bg-zinc-600 text-white font-bold backdrop-blur-sm transition-transform active:scale-95 ring-1 ring-white/20">✅ Reset</button>
+                <div className="flex flex-row flex-wrap justify-end gap-2">
+                  <button type="button" onClick={() => setSimulatedTemp(30)} className="text-[13px] px-3 py-2 rounded shadow-lg bg-yellow-500/90 hover:bg-yellow-400 text-black font-bold backdrop-blur-sm transition-transform active:scale-95">⚠️ 30°C</button>
+                  <button type="button" onClick={() => setSimulatedTemp(36)} className="text-[13px] px-3 py-2 rounded shadow-lg bg-orange-600/90 hover:bg-orange-500 text-white font-bold backdrop-blur-sm transition-transform active:scale-95">🚨 36°C</button>
+                  <button type="button" onClick={() => setSimulatedTemp(41)} className="text-[13px] px-3 py-2 rounded shadow-lg bg-red-700/90 hover:bg-red-600 text-white font-bold backdrop-blur-sm transition-transform active:scale-95">🔴 41°C</button>
+                  <button type="button" onClick={() => { setSimulatedTemp(null); setSensorTemp(20.0); if (fetchSensorRef.current) fetchSensorRef.current(); }} className="text-[13px] px-3 py-2 rounded shadow-lg bg-zinc-700/90 hover:bg-zinc-600 text-white font-bold backdrop-blur-sm transition-transform active:scale-95 ring-1 ring-white/20">✅ Reset</button>
+                </div>
+
+                {/* Heat zone level indicator */}
+                {userPos && currentZone && (
+                  <div className="bg-[#111]/85 backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-neutral-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex items-center gap-2">
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Zone</span>
+                    <span className={`font-bold uppercase ${currentZone === 'high' ? 'text-red-400' : currentZone === 'medium' ? 'text-orange-400' : 'text-yellow-400'}`}>
+                      {currentZone}
+                    </span>
+                    <span className="text-[14px]">{currentZone === 'high' ? '🔴' : currentZone === 'medium' ? '🟠' : '🟡'}</span>
+                  </div>
+                )}
+
+                {/* Direction arrow synced with selected shelter */}
+                {(() => {
+                  const sel = selectedShelterType === 'cooling' ? nearestCooling : selectedShelterType === 'library' ? nearestLibrary : null;
+                  if (!userPos || !sel) return null;
+                  const bearing = getBearing(userPos.lat, userPos.lng, sel.lat, sel.lng);
+                  return (
+                    <div className="bg-[#111]/85 backdrop-blur-md border border-white/10 rounded-lg px-3 py-1.5 text-[12px] text-neutral-200 shadow-[0_4px_12px_rgba(0,0,0,0.5)] flex items-center gap-2">
+                      <span style={{ transform: `rotate(${bearing}deg)`, display: 'inline-block', lineHeight: 1 }} className="text-[16px]">↑</span>
+                      <span className="font-bold text-cyan-400">{bearingToCompass(bearing)}</span>
+                      <span className="text-neutral-400">{sel.type === 'cooling' ? '❄️' : '📚'}</span>
+                      <span className="text-neutral-300">{sel.distance.toFixed(1)} km</span>
+                    </div>
+                  );
+                })()}
               </div>
 
               {/* 🗺️ Horizontal Map Legend Floating Overlay */}
               <div className="absolute bottom-3 left-3 z-[1000] bg-[#111]/85 backdrop-blur-md border border-white/10 rounded-lg px-3 py-2 flex items-center gap-4 text-[11px] text-neutral-300 shadow-[0_4px_12px_rgba(0,0,0,0.5)]">
-                <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider border-r border-white/10 pr-2">Layers</span>
-                
-                {/* Heat levels */}
+                <div className="flex flex-col border-r border-white/10 pr-2">
+                  <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider">Heat Island</span>
+                  <span className="text-[9px] text-neutral-600">Historically hot zones</span>
+                </div>
+
+                {/* Heat island intensity levels */}
                 <div className="flex items-center gap-3">
                   <div className="flex items-center gap-1">
                     <div className="w-2.5 h-2.5 rounded bg-[#dc2626]/85 border border-red-500/50 shrink-0"></div>
-                    <span>High</span>
+                    <span>Extreme</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2.5 h-2.5 rounded bg-[#f97316]/65 border border-orange-500/50 shrink-0"></div>
-                    <span>Mid</span>
+                    <span>Moderate</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <div className="w-2.5 h-2.5 rounded bg-[#facc15]/45 border border-yellow-500/50 shrink-0"></div>
-                    <span>Low</span>
+                    <span>Mild</span>
                   </div>
                 </div>
 
